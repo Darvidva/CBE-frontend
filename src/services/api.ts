@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { Subject, Question, ExamAttempt, ExamSession, APIQuestion } from '../types/exam';
 
-const API_URL = 'http://127.0.0.1:8000/api/v1';
+const API_URL = 'https://cbe-backend.onrender.com/api/v1';
 
 export const api = axios.create({
   baseURL: API_URL,
