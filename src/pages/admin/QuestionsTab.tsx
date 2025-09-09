@@ -59,22 +59,18 @@ export function QuestionsTab() {
 
     const loadQuestions = async (subjectId: string) => {
       if (!subjectId) {
-        console.log('No subject ID provided');
         setQuestions([]);
         return;
       }
       
       setLoading(true);
       try {
-        console.log('Loading questions for subject:', { subjectId });
         const questions = await questionService.getBySubject(subjectId);
-        console.log('Loaded questions:', { count: questions.length, questions });
-
         setQuestions(questions);
 
         // Only show toast for successful loads (skip initial load)
         if (questions.length === 0) {
-          console.log('No questions found');
+          // No questions found - this is normal for new subjects
         } else {
           toast.success(`Loaded ${questions.length} questions`);
         }
@@ -344,7 +340,6 @@ export function QuestionsTab() {
             ) : questions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No questions found for this subject. Create your first question to get started.
-                <pre className="mt-4 text-xs text-left">Debug: {JSON.stringify({ selectedSubjectId, questions }, null, 2)}</pre>
               </div>
             ) : (
               <Table>

@@ -24,24 +24,29 @@ export function ResultPage() {
   const loadResult = async () => {
     setLoading(true);
     try {
-      // Mock loading result - in real app this would be an API call
-      // For demo, we'll create a mock result
-      const mockResult: ExamAttempt = {
-        id: attemptId || '',
-        studentId: 'student1',
-        studentName: 'Student User',
-        subjectId: '1',
-        subjectName: 'Mathematics',
-        answers: { 'q1': 1, 'q2': 1 },
-        score: 2,
-        totalQuestions: 2,
-        percentage: 100,
+      // Fetch real result data from the backend
+      const resultData = await examApi.getResultById(attemptId!);
+      
+      // Get subject information
+      const subjects = await import('../../services/apiClient').then(m => m.subjects.getAll());
+      const subject = subjects.find(s => s.id === resultData.subject_id.toString());
+      
+      const result: ExamAttempt = {
+        id: resultData.id.toString(),
+        studentId: resultData.student_id.toString(),
+        studentName: 'Student User', // Could be fetched from user context
+        subjectId: resultData.subject_id.toString(),
+        subjectName: subject?.name || 'Unknown Subject',
+        answers: {}, // Not needed for display
+        score: resultData.score,
+        totalQuestions: resultData.total,
+        percentage: resultData.percentage,
         status: 'completed',
         timeRemaining: 0,
-        submittedAt: new Date().toISOString(),
-        createdAt: new Date().toISOString()
+        submittedAt: resultData.created_at,
+        createdAt: resultData.created_at
       };
-      setResult(mockResult);
+      setResult(result);
     } catch (error) {
       console.error('Failed to load result:', error);
       setError('Failed to load exam result.');

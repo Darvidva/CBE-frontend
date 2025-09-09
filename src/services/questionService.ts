@@ -36,17 +36,10 @@ const mapQuestionToAPI = (question: Partial<Question>) => ({
 export const questionService = {
   async getBySubject(subjectId: string) {
     try {
-      console.log('Fetching questions for subject:', subjectId);
       // Axios interceptor returns data directly
       const data = await api.get<APIQuestion[] | APIQuestion>(`/questions/${subjectId}`);
-      console.log('API Response (data):', data);
-
       const apiQuestions = Array.isArray(data) ? data : data ? [data] : [];
-      if (!apiQuestions.length) {
-        console.warn('No questions returned from API');
-        return [];
-      }
-
+      
       return apiQuestions.map(mapAPIQuestionToQuestion);
     } catch (error) {
       console.error('Error fetching questions:', error);
@@ -56,10 +49,8 @@ export const questionService = {
 
   async create(subjectId: string, question: Omit<Question, 'id' | 'createdAt'>) {
     try {
-      console.log('Creating question:', { subjectId, question });
       // Axios interceptor returns data directly
       const created = await api.post<APIQuestion>(`/questions/${subjectId}`, mapQuestionToAPI(question));
-      console.log('Create response (data):', created);
       return mapAPIQuestionToQuestion(created);
     } catch (error) {
       console.error('Error creating question:', error);
@@ -69,10 +60,8 @@ export const questionService = {
 
   async update(id: string, question: Partial<Question>) {
     try {
-      console.log('Updating question:', { id, question });
       // Axios interceptor returns data directly
       const updated = await api.put<APIQuestion>(`/questions/${id}`, mapQuestionToAPI(question));
-      console.log('Update response (data):', updated);
       return mapAPIQuestionToQuestion(updated);
     } catch (error) {
       console.error('Error updating question:', error);
@@ -82,9 +71,7 @@ export const questionService = {
 
   async delete(id: string) {
     try {
-      console.log('Deleting question:', id);
       await api.delete(`/questions/${id}`);
-      console.log('Question deleted successfully');
     } catch (error) {
       console.error('Error deleting question:', error);
       throw error;

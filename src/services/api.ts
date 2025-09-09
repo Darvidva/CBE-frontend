@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { Subject, Question, ExamAttempt, ExamSession, APIQuestion } from '../types/exam';
 
+// const API_URL = 'http://127.0.0.1:8000/api/v1';
+
 const API_URL = 'https://cbe-backend.onrender.com/api/v1';
 
 export const api = axios.create({
@@ -18,14 +20,12 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  console.log('API Request:', { url: config.url, method: config.method, data: config.data });
   return config;
 });
 
 // Response interceptor for error handling
 api.interceptors.response.use(
   (response) => {
-    console.log('API Response:', { url: response.config.url, status: response.status, data: response.data });
     if (response.data === null || response.data === undefined) {
       console.warn('Empty response data, returning empty array');
       return [];
@@ -131,9 +131,7 @@ export const subjects = {
 export const questions = {
   getBySubject: async (subjectId: string) => {
     try {
-      console.log('Fetching questions for subject:', subjectId);
       const response = await api.get<any, APIQuestion[]>(`/questions/${subjectId}`);
-      console.log('API response:', response);
       
       // For development/testing, return mock data if API fails
       if (!response) {
@@ -142,7 +140,6 @@ export const questions = {
       }
       
       const questionsData = Array.isArray(response) ? response : [response];
-      console.log('Questions data:', questionsData);
       
       return questionsData.map(q => ({
         id: q.id || String(Date.now()),
@@ -227,8 +224,44 @@ export const exams = {
 
 // Results API
 export const results = {
-  getMine: () => api.get<ExamAttempt[]>('/results/me'),
-  getAll: () => api.get<ExamAttempt[]>('/results'),
+  getMine: async () => {
+    const response = await api.get('/results/me');
+    // Map backend result format to frontend ExamAttempt format
+    return Array.isArray(response) ? response.map((r: any) => ({
+      id: r.id.toString(),
+      studentId: r.student_id.toString(),
+      studentName: r.student_name || 'Student User',
+      subjectId: r.subject_id.toString(),
+      subjectName: r.subject_name || 'Unknown Subject',
+      answers: {},
+      score: r.score,
+      totalQuestions: r.total,
+      percentage: r.percentage,
+      status: 'completed' as const,
+      timeRemaining: 0,
+      submittedAt: r.created_at,
+      createdAt: r.created_at
+    })) : [];
+  },
+  getAll: async () => {
+    const response = await api.get('/results');
+    // Map backend result format to frontend ExamAttempt format
+    return Array.isArray(response) ? response.map((r: any) => ({
+      id: r.id.toString(),
+      studentId: r.student_id.toString(),
+      studentName: r.student_name || 'Student User',
+      subjectId: r.subject_id.toString(),
+      subjectName: r.subject_name || 'Unknown Subject',
+      answers: {},
+      score: r.score,
+      totalQuestions: r.total,
+      percentage: r.percentage,
+      status: 'completed' as const,
+      timeRemaining: 0,
+      submittedAt: r.created_at,
+      createdAt: r.created_at
+    })) : [];
+  },
 };
 
 // Exam API
@@ -268,9 +301,9 @@ export const examApi = {
       }))
     };
     const result: any = await api.post('/exams/submit', payload);
-    // Map minimal attempt for navigation; ResultPage uses mock data
+    // Map minimal attempt for navigation; ResultPage will fetch real data
     const attempt: ExamAttempt = {
-      id: `${Date.now()}`,
+      id: String(result?.id ?? Date.now()),
       studentId: 'me',
       studentName: 'Me',
       subjectId: String(subjectId),
@@ -292,6 +325,10 @@ export const examApi = {
   },
 
   async getAllResults(): Promise<ExamAttempt[]> {
-    return api.get('/results');
+    return results.getAll();
+  },
+
+  async getResultById(resultId: string): Promise<any> {
+    return api.get(`/results/${resultId}`);
   }
 };

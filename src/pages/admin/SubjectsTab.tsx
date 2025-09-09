@@ -22,9 +22,9 @@ export function SubjectsTab() {
   // Form state
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [duration, setDuration] = useState<number>(60);
-  const [totalQuestions, setTotalQuestions] = useState<number>(10);
-  const [passingScore, setPassingScore] = useState<number>(70);
+  const [duration, setDuration] = useState<string>('60');
+  const [totalQuestions, setTotalQuestions] = useState<string>('10');
+  const [passingScore, setPassingScore] = useState<string>('70');
 
   useEffect(() => {
     loadSubjects();
@@ -49,9 +49,9 @@ export function SubjectsTab() {
   const resetForm = () => {
     setName('');
     setDescription('');
-    setDuration(60);
-    setTotalQuestions(10);
-    setPassingScore(70);
+    setDuration('60');
+    setTotalQuestions('10');
+    setPassingScore('70');
     setEditingSubject(null);
   };
 
@@ -64,9 +64,9 @@ export function SubjectsTab() {
       const subjectData = {
         name,
         description,
-        duration,
-        totalQuestions,
-        passingScore
+        duration: parseInt(duration) || 60,
+        totalQuestions: parseInt(totalQuestions) || 10,
+        passingScore: parseInt(passingScore) || 70
       };
 
       if (editingSubject) {
@@ -94,9 +94,9 @@ export function SubjectsTab() {
     setEditingSubject(subject);
     setName(subject.name);
     setDescription(subject.description);
-    setDuration(subject.duration);
-    setTotalQuestions(subject.totalQuestions);
-    setPassingScore(subject.passingScore);
+    setDuration(subject.duration.toString());
+    setTotalQuestions(subject.totalQuestions.toString());
+    setPassingScore(subject.passingScore.toString());
     setDialogOpen(true);
   };
 
@@ -174,11 +174,9 @@ export function SubjectsTab() {
                     id="duration"
                     type="number"
                     value={duration}
-                    onChange={(e) => {
-                      const value = e.target.value ? parseInt(e.target.value) : 60;
-                      setDuration(isNaN(value) ? 60 : value);
-                    }}
+                    onChange={(e) => setDuration(e.target.value)}
                     min={1}
+                    placeholder="Enter duration in minutes"
                     required
                   />
                 </div>
@@ -189,11 +187,9 @@ export function SubjectsTab() {
                     id="totalQuestions"
                     type="number"
                     value={totalQuestions}
-                    onChange={(e) => {
-                      const value = e.target.value ? parseInt(e.target.value) : 10;
-                      setTotalQuestions(isNaN(value) ? 10 : value);
-                    }}
+                    onChange={(e) => setTotalQuestions(e.target.value)}
                     min={1}
+                    placeholder="Enter total questions"
                     required
                   />
                 </div>
@@ -205,12 +201,10 @@ export function SubjectsTab() {
                   id="passingScore"
                   type="number"
                   value={passingScore}
-                  onChange={(e) => {
-                    const value = e.target.value ? parseInt(e.target.value) : 70;
-                    setPassingScore(isNaN(value) ? 70 : value);
-                  }}
+                  onChange={(e) => setPassingScore(e.target.value)}
                   min={0}
                   max={100}
+                  placeholder="Enter passing score percentage"
                   required
                 />
               </div>

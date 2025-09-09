@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
 import { Badge } from '../../components/ui/badge';
 import { Alert, AlertDescription } from '../../components/ui/alert';
 import { Subject, ExamAttempt } from '../../types/exam';
-import { subjects, results } from '../../services/apiClient';
+import { subjects, results, questions } from '../../services/apiClient';
 import { useAuth } from '../../contexts/AuthContext';
-import { Clock, BookOpen, CheckCircle, Play } from 'lucide-react';
+import { Clock, BookOpen, CheckCircle, Play, RefreshCw } from 'lucide-react';
 
 // Helper function to assert type
 function assertType<T>(data: unknown): asserts data is T {}
@@ -15,6 +15,7 @@ function assertType<T>(data: unknown): asserts data is T {}
 export function StudentDashboard() {
   const [subjectList, setSubjectList] = useState<Subject[]>([]);
   const [attempts, setAttempts] = useState<ExamAttempt[]>([]);
+  const [subjectQuestionCounts, setSubjectQuestionCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export function StudentDashboard() {
   useEffect(() => {
     loadData();
   }, []);
+
 
   const loadData = async () => {
     setLoading(true);
@@ -40,25 +42,60 @@ export function StudentDashboard() {
         })
       ]);
 
-      setSubjectList(Array.isArray(subjectsData) ? subjectsData : []);
-      setAttempts(Array.isArray(attemptsData) ? attemptsData : []);
+      const subjectsList = Array.isArray(subjectsData) ? subjectsData : [];
+      const attemptsList = Array.isArray(attemptsData) ? attemptsData : [];
+      
+      // Map subject names to attempts
+      const attemptsWithSubjectNames = attemptsList.map(attempt => ({
+        ...attempt,
+        subjectName: subjectsList.find(s => s.id === attempt.subjectId)?.name || 'Unknown Subject'
+      }));
+
+      // Load question counts for each subject
+      const questionCounts: Record<string, number> = {};
+      for (const subject of subjectsList) {
+        try {
+          const questionsData = await questions.getBySubject(subject.id);
+          questionCounts[subject.id] = Array.isArray(questionsData) ? questionsData.length : 0;
+        } catch (error) {
+          console.warn(`Failed to load questions for subject ${subject.id}:`, error);
+          questionCounts[subject.id] = 0;
+        }
+      }
+      
+      setSubjectList(subjectsList);
+      setAttempts(attemptsWithSubjectNames);
+      setSubjectQuestionCounts(questionCounts);
     } catch (error) {
       console.error('Failed to load data:', error);
       setError(error instanceof Error ? error.message : 'Failed to load data');
       setSubjectList([]);
       setAttempts([]);
+      setSubjectQuestionCounts({});
     } finally {
       setLoading(false);
     }
   };
 
   const getSubjectStatus = (subjectId: string) => {
-    const attempt = attempts.find(a => a.subjectId === subjectId);
+    const attempt = attempts.find((a: any) => 
+      a.subjectId === subjectId || 
+      String(a.subject_id) === subjectId ||
+      String(a.subjectId) === subjectId ||
+      String(a.subject_id) === String(subjectId) ||
+      String(a.subjectId) === String(subjectId)
+    );
     return attempt ? 'completed' : 'available';
   };
 
   const getSubjectAttempt = (subjectId: string) => {
-    return attempts.find(a => a.subjectId === subjectId);
+    return attempts.find((a: any) => 
+      a.subjectId === subjectId || 
+      String(a.subject_id) === subjectId ||
+      String(a.subjectId) === subjectId ||
+      String(a.subject_id) === String(subjectId) ||
+      String(a.subjectId) === String(subjectId)
+    );
   };
 
   const handleStartExam = (subjectId: string) => {
@@ -81,16 +118,35 @@ export function StudentDashboard() {
     );
   }
 
-  const availableSubjects = subjectList.filter(s => getSubjectStatus(s.id) === 'available');
-  const completedAttempts = attempts;
+  const availableSubjects = subjectList.filter((s) => 
+    getSubjectStatus(s.id) === 'available' && (subjectQuestionCounts[s.id] || 0) > 0
+  );
+  const completedSubjects = subjectList.filter((s) => getSubjectStatus(s.id) === 'completed');
+  const subjectsWithoutQuestions = subjectList.filter((s) => 
+    getSubjectStatus(s.id) === 'available' && (subjectQuestionCounts[s.id] || 0) === 0
+  );
 
   return (
     <div className="space-y-6">
       <div>
-        <h1>Welcome, {user?.name}!</h1>
-        <p className="text-muted-foreground">
-          Select an exam to get started or view your results
-        </p>
+        <div className="flex justify-between items-center">
+          <div>
+            <h1>Welcome, {user?.name}!</h1>
+            <p className="text-muted-foreground">
+              Select an exam to get started or view your results
+            </p>
+          </div>
+          <Button 
+            onClick={loadData} 
+            variant="outline" 
+            size="sm"
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -141,41 +197,66 @@ export function StudentDashboard() {
       {/* Available Exams */}
       <div className="space-y-4">
         <h2>Available Exams</h2>
-        {availableSubjects.length === 0 ? (
-          <div className="text-muted-foreground">No available exam</div>
-        ) : (
+        {availableSubjects.length === 0 && (
+          <p className="text-sm text-muted-foreground">No available exam</p>
+        )}
+        {availableSubjects.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {availableSubjects.map((subject) => {
-              const status = getSubjectStatus(subject.id);
+            {availableSubjects.map((subject) => (
+              <Card key={subject.id} className="hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{subject.name}</CardTitle>
+                    <Badge variant="secondary">Available</Badge>
+                  </div>
+                  <CardDescription>{subject.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      {subject.duration} minutes
+                    </div>
+                    <div>
+                      {subject.totalQuestions} questions
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={() => handleStartExam(subject.id)} className="flex-1">
+                      <Play className="h-4 w-4 mr-2" />
+                      Start Exam
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Completed Exams */}
+      <div className="space-y-4">
+        <h2>Completed Exams</h2>
+        {completedSubjects.length === 0 && (
+          <p className="text-sm text-muted-foreground">No completed exam</p>
+        )}
+        {completedSubjects.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {completedSubjects.map((subject) => {
               const attempt = getSubjectAttempt(subject.id);
-              
               return (
                 <Card key={subject.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg">{subject.name}</CardTitle>
-                      <Badge 
-                        variant={status === 'completed' ? 'default' : 'secondary'}
-                      >
-                        {status === 'completed' ? 'Completed' : 'Available'}
-                      </Badge>
+                      <Badge>Completed</Badge>
                     </div>
                     <CardDescription>{subject.description}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {subject.duration} minutes
-                      </div>
-                      <div>
-                        {subject.totalQuestions} questions
-                      </div>
-                    </div>
-                    
                     {attempt && (
                       <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-sm">Your Score: {attempt.score}/{attempt.totalQuestions}</p>
+                        <p className="text-sm">Your Score: {attempt.score}/{attempt.totalQuestions || 0}</p>
                         <p className="text-sm">Percentage: {attempt.percentage}%</p>
                         <p className="text-sm">
                           Status: {' '}
@@ -185,60 +266,8 @@ export function StudentDashboard() {
                         </p>
                       </div>
                     )}
-                    
                     <div className="flex gap-2">
-                      <Button 
-                        onClick={() => handleStartExam(subject.id)}
-                        className="flex-1"
-                      >
-                        <Play className="h-4 w-4 mr-2" />
-                        Start Exam
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Completed Exams */}
-      <div className="space-y-4">
-        <h2>Completed Exams</h2>
-        {completedAttempts.length === 0 ? (
-          <div className="text-muted-foreground">No completed exam</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {completedAttempts.map((attempt) => {
-              const subject = subjectList.find(s => s.id === attempt.subjectId);
-              if (!subject) return null;
-              return (
-                <Card key={attempt.id} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{subject.name}</CardTitle>
-                      <Badge variant="default">Completed</Badge>
-                    </div>
-                    <CardDescription>{subject.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="p-3 bg-muted rounded-lg">
-                      <p className="text-sm">Your Score: {attempt.score}/{attempt.totalQuestions}</p>
-                      <p className="text-sm">Percentage: {attempt.percentage}%</p>
-                      <p className="text-sm">
-                        Status: {' '}
-                        <span className={attempt.percentage >= subject.passingScore ? 'text-green-600' : 'text-red-600'}>
-                          {attempt.percentage >= subject.passingScore ? 'Passed' : 'Failed'}
-                        </span>
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button 
-                        onClick={() => handleViewResult(subject.id)}
-                        variant="outline"
-                        className="flex-1"
-                      >
+                      <Button onClick={() => handleViewResult(subject.id)} variant="outline" className="flex-1">
                         View Result
                       </Button>
                     </div>
@@ -249,6 +278,40 @@ export function StudentDashboard() {
           </div>
         )}
       </div>
+
+      {/* Subjects Without Questions (Optional - for admin visibility) */}
+      {subjectsWithoutQuestions.length > 0 && (
+        <div className="space-y-4">
+          <h2>Subjects Being Prepared</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {subjectsWithoutQuestions.map((subject) => (
+              <Card key={subject.id} className="hover:shadow-md transition-shadow opacity-60">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">{subject.name}</CardTitle>
+                    <Badge variant="outline">No Questions Yet</Badge>
+                  </div>
+                  <CardDescription>{subject.description}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <Clock className="h-4 w-4" />
+                      {subject.duration} minutes
+                    </div>
+                    <div>
+                      {subject.totalQuestions} questions planned
+                    </div>
+                  </div>
+                  <div className="text-center text-sm text-muted-foreground">
+                    Questions are being prepared. Check back later.
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

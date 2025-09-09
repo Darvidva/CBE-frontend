@@ -171,8 +171,8 @@ export function ResultsTab() {
               <TableBody>
                 {filteredResults.map((result: any) => (
                   <TableRow key={result.id}>
-                    <TableCell>{result.studentName || result.student_name || `Student #${result.studentId ?? result.student_id ?? '-'}`}</TableCell>
-                    <TableCell>{result.subjectName || result.subject_name || `Subject #${result.subjectId ?? result.subject_id ?? '-'}`}</TableCell>
+                    <TableCell>{result.studentName || 'Unknown Student'}</TableCell>
+                    <TableCell>{result.subjectName || 'Unknown Subject'}</TableCell>
                     <TableCell>
                       {result.score}/{result.totalQuestions ?? result.total ?? 0}
                     </TableCell>
