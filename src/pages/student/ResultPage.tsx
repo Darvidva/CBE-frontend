@@ -122,7 +122,7 @@ export function ResultPage() {
             {result.subjectName} • Submitted on {new Date(result.submittedAt || '').toLocaleString()}
           </CardDescription>
           
-          <div className="mt-4">
+          <div className="mt-4 mb-4">
             <Badge 
               variant={passed ? 'default' : 'destructive'}
               className="text-lg px-4 py-2"
