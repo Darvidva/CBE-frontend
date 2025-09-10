@@ -170,7 +170,17 @@ export function QuestionsTab() {
           <DialogTrigger asChild>
             <Button 
               className="flex items-center gap-2"
-              disabled={!selectedSubjectId}
+              disabled={
+                !selectedSubjectId ||
+                (subjects.find(s => s.id === selectedSubjectId)?.totalQuestions !== undefined &&
+                questions.length >= (subjects.find(s => s.id === selectedSubjectId)?.totalQuestions || 0))
+              }
+              onClick={() => {
+                const subject = subjects.find(s => s.id === selectedSubjectId);
+                if (subject && subject.totalQuestions !== undefined && questions.length >= subject.totalQuestions) {
+                  toast.error("Maximum number of questions for this subject has been reached. Edit the subject to increase the limit.");
+                }
+              }}
             >
               <Plus className="h-4 w-4" />
               Add Question
@@ -321,6 +331,9 @@ export function QuestionsTab() {
             </CardTitle>
             <CardDescription>
               Manage all questions for this subject
+            </CardDescription>
+            <CardDescription>
+              {questions.length} / {subjects.find(s => s.id === selectedSubjectId)?.totalQuestions || '∞'} questions
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -246,17 +246,6 @@ export function ResultPage() {
               <Home className="h-4 w-4" />
               Back to Dashboard
             </Button>
-            
-            {!passed && (
-              <Button
-                variant="outline"
-                onClick={() => navigate(`/exam/${result.subjectId}`)}
-                className="flex items-center gap-2"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Retake Exam
-              </Button>
-            )}
           </div>
         </CardContent>
       </Card>

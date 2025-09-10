@@ -244,6 +244,7 @@ export function StudentDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {completedSubjects.map((subject) => {
               const attempt = getSubjectAttempt(subject.id);
+              
               return (
                 <Card key={subject.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
@@ -256,7 +257,7 @@ export function StudentDashboard() {
                   <CardContent className="space-y-4">
                     {attempt && (
                       <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-sm">Your Score: {attempt.score}/{attempt.totalQuestions || 0}</p>
+                        <p className="text-sm">Your Score: {attempt.score}/{attempt.total || 0}</p>
                         <p className="text-sm">Percentage: {attempt.percentage}%</p>
                         <p className="text-sm">
                           Status: {' '}
