@@ -257,7 +257,7 @@ export function StudentDashboard() {
                   <CardContent className="space-y-4">
                     {attempt && (
                       <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-sm">Your Score: {attempt.score}/{attempt.totalQuestions || 0}</p>
+                        <p className="text-sm">Your Score: {attempt.score}/{attempt.total}</p>
                         <p className="text-sm">Percentage: {attempt.percentage}%</p>
                         <p className="text-sm">
                           Status: {' '}
