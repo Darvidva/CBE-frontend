@@ -36,7 +36,7 @@ export function ResultPage() {
         studentId: resultData.student_id.toString(),
         studentName: 'Student User', // Could be fetched from user context
         subjectId: resultData.subject_id.toString(),
-        subjectName: subject?.name || 'Unknown Subject',
+        subjectName: resultData.subject_name ,
         answers: {}, // Not needed for display
         score: resultData.score,
         totalQuestions: resultData.total,

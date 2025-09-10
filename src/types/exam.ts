@@ -49,7 +49,7 @@ export interface ExamAttempt {
   subjectName: string;
   answers: Record<string, number>; // questionId -> selected option index
   score: number;
-  total: number;
+  totalQuestions: number;
   percentage: number;
   status: 'completed' | 'in-progress';
   timeRemaining: number; // in seconds
