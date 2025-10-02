@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { Subject, Question, ExamAttempt, ExamSession, APIQuestion } from '../types/exam';
 
-// const API_URL = 'http://127.0.0.1:8000/api/v1';
-
-const API_URL = 'https://cbe-backend.onrender.com/api/v1';
+const API_URL = (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
+  ? 'https://cbe-backend.onrender.com/api/v1'
+  : 'http://127.0.0.1:8000/api/v1';
 
 export const api = axios.create({
   baseURL: API_URL,
@@ -38,6 +38,12 @@ api.interceptors.response.use(
       status: error.response?.status,
       error: error.response?.data?.detail || error.message
     });
+    if (error.response?.status === 401) {
+      try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      } catch {}
+    }
     if (error.response?.data?.detail) {
       throw new Error(error.response.data.detail);
     }
@@ -81,7 +87,7 @@ const mockExamAttempts: ExamAttempt[] = [
     subjectName: 'Mathematics',
     answers: { 'q1': 1, 'q2': 1 },
     score: 2,
-    totalQuestions: 2,
+    total: 2,
     percentage: 100,
     status: 'completed',
     timeRemaining: 0,
@@ -235,7 +241,7 @@ export const results = {
       subjectName: r.subject_name || 'Unknown Subject',
       answers: {},
       score: r.score,
-      totalQuestions: r.total,
+      total: r.total,
       percentage: r.percentage,
       status: 'completed' as const,
       timeRemaining: 0,
@@ -254,7 +260,7 @@ export const results = {
       subjectName: r.subject_name || 'Unknown Subject',
       answers: {},
       score: r.score,
-      totalQuestions: r.total,
+      total: r.total,
       percentage: r.percentage,
       status: 'completed' as const,
       timeRemaining: 0,
@@ -310,7 +316,7 @@ export const examApi = {
       subjectName: '',
       answers: {},
       score: Number(result?.score ?? 0),
-      totalQuestions: Number(result?.total ?? 0),
+      total: Number(result?.total ?? 0),
       percentage: Number(result?.percentage ?? 0),
       status: (result?.status ?? 'completed') as any,
       timeRemaining: 0,
